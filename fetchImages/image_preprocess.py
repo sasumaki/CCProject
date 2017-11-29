@@ -29,9 +29,9 @@ def resize(img):
         aspect = (y/x)
     print(y,x,aspect)
     if y < x:
-        img = misc.imresize(img, (64, math.ceil(64*aspect)))
+        img = misc.imresize(img, (64, math.ceil(64*aspect)), interp="lanczos")
     else:
-        img = misc.imresize(img, (math.ceil(64*aspect),64))
+        img = misc.imresize(img, (math.ceil(64*aspect),64),interp="lanczos")
 
     return img
 
@@ -61,6 +61,6 @@ if __name__ == '__main__':
     
     for image in images:
         print("saving img " + str(idx) + "...")
-        misc.imsave("images64x64/" + str(idx) + ".jpg", image)
+        misc.imsave("images64x64/" + str(idx) + ".png", image)
         idx += 1
         
