@@ -1,20 +1,13 @@
-import csv
 import os
 from multiprocessing.pool import Pool
-from typing import List
+
+import os
+from collections import defaultdict
+from multiprocessing.pool import Pool
 
 import requests
-from collections import defaultdict
 
-
-def load_catalog() -> List[List[str]]:
-    with open('catalog.csv') as f:
-        reader = csv.reader(f, delimiter=';')
-        return list(reader)[1:]
-
-
-def art_paths(catalog: List[List[str]]) -> List[str]:
-    return [row[6] for row in catalog]
+from fetchImages.catalog import load_catalog, art_paths
 
 
 def download_image(art_path: str):
