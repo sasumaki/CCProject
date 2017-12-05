@@ -8,6 +8,8 @@ import glob
 from PIL import Image
 import math
 
+def sort_by_image_index(filename):
+    return int(re.search("(\d*)\...g", filename).group(1))
 
 
 #Crops images from the center
@@ -15,8 +17,7 @@ def crop_center(img,cropx,cropy):
     y,x,c = img.shape
     startx = x//2-(cropx//2)
     starty = y//2-(cropy//2)
-    
- 
+
     return img[starty:starty+cropy,startx:startx+cropx]
 
 
@@ -36,9 +37,11 @@ def resize(img):
     return img
 
 # Calls methods to preprocess images to 64x64 size
-def preprocess(images):
-    
-    for filename in glob.glob('images/*.jpg'): 
+def preprocess():
+    images = []
+    filenames = glob.glob('images/*.jpg')
+    filenames.sort(key=sort_by_image_index)
+    for filename in filenames:
         try:
             image = ndimage.imread(filename, mode="RGB")
         except:
@@ -51,8 +54,7 @@ def preprocess(images):
 
 # Preprocesses images to 64x64 size and saves in folder.
 if __name__ == '__main__':
-    images = []
-    images = preprocess(images)
+    images = preprocess()
     directory = "images64x64"
     if not os.path.exists(directory):
         os.makedirs(directory)
