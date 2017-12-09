@@ -93,4 +93,5 @@ ENV/
 *.idea
 
 imageFetcher/images/
+imageFetcher/cache
 *.iml

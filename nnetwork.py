@@ -4,6 +4,7 @@ import matplotlib as mpl
 import re
 from keras import Input, Model
 from tensorflow.python import debug as tf_debug
+import pprint
 
 import imageloader
 from fetchImages import catalog
@@ -56,7 +57,7 @@ def model_generator():
     H = (UpSampling2D(size=(2, 2)))(H)
     H = (Convolution2D(3, h, h, border_mode='same', W_regularizer=reg()))(H)
     H = (Activation('sigmoid'))(H)
-    return Model(inputs=[input_z, input_label], outputs=[H, input_label])
+    return Model(inputs=[input_z, input_label], outputs=H)
 
 
 def model_discriminator():
@@ -65,7 +66,6 @@ def model_discriminator():
     reg = lambda: l1l2(l1=1e-7, l2=1e-7)
 
     input_d = Input(shape=(64, 64, 3))
-    input_aux = Input(shape=(10,))
     c1 = Convolution2D(int(nch / 4), h, h, border_mode='same', W_regularizer=reg(),
                        input_shape=(64, 64, 3))
     c2 = Convolution2D(int(nch / 4), h, h, border_mode='same', W_regularizer=reg())
@@ -85,21 +85,42 @@ def model_discriminator():
     H = c4(H)
     H = AveragePooling2D(pool_size=(4, 4), border_mode='valid')(H)
     H = Flatten()(H)
-    H = Concatenate()([H, input_aux])
     H = Dense(256)(H)
     H = LeakyReLU(0.2)(H)
     H = Dense(64)(H)
     H = LeakyReLU(0.2)(H)
-    H = Dense(1)(H)
-    H = Activation('sigmoid')(H)
-    return Model(inputs=[input_d, input_aux], outputs=H)
 
+    fake = Dense(1)(H)
+    fake = Activation('sigmoid')(fake)
+
+    category = Dense(10)(H)
+    category = Activation('softmax')(category)
+    return Model(inputs=[input_d], outputs=[fake, category])
+
+def build_gan(generator, discriminator, name="gan"):
+    """
+    Build GAN from generator and discriminator
+    Model is (z, x) -> (yfake, yreal)
+    :param generator: Model (z -> x)
+    :param discriminator: Model (x -> y)
+    :return: GAN model
+    """
+    yfake = Activation("linear", name="yfake")(discriminator(generator(generator.inputs))[0])
+    yfake_label = Activation("linear", name="yfake_label")(discriminator(generator(generator.inputs))[1])
+    yreal = Activation("linear", name="yreal")(discriminator(discriminator.inputs)[0])
+    yreal_label = Activation("linear", name="yreal_label")(discriminator(discriminator.inputs)[1])
+    model = Model(generator.inputs + discriminator.inputs, [yfake, yreal, yfake_label, yreal_label], name=name)
+    return model
+
+
+def simple_gan(generator, discriminator, latent_sampling):
+    return build_gan(generator, discriminator)
 
 optimizer = AdversarialOptimizerSimultaneous()
 opt_g = Adam(1e-5, decay=1e-5)
 opt_d = Adam(5e-5, decay=1e-5)
 nb_epoch = 500
-path = os.path.join("output", "art4")
+path = os.path.join("output", "art7")
 loss = 'binary_crossentropy'
 latent_dim = 100
 
@@ -154,12 +175,18 @@ def main():
                              player_names=["generator", "discriminator"])
     model.adversarial_compile(adversarial_optimizer=optimizer,
                               player_optimizers=[opt_g, opt_d],
-                              loss=loss)
+                              loss={
+                                  "yfake": "binary_crossentropy",
+                                  "yreal": "binary_crossentropy",
+                                  "yreal_label": "categorical_crossentropy",
+                                  "yfake_label": "categorical_crossentropy"
+                              })
 
     callbacks = initialize_callbacks(path, generator, discriminator, latent_dim)
 
-    history = fit(model, x=[z, one_hots, xtrain, one_hots], y=y,
-                  callbacks=callbacks, nb_epoch=nb_epoch, initial_epoch=current_epoch - 1,
+    y = y[:2] + [one_hots]*2 + y[2:] + [one_hots]*2
+    history = fit(model, x=[z, one_hots, xtrain], y=y,
+                  callbacks=callbacks, nb_epoch=nb_epoch, initial_epoch=current_epoch,
                   batch_size=32)
 
 
@@ -180,7 +207,10 @@ def initialize_callbacks(path, generator, discriminator, latent_dim):
     def generator_sampler():
         hots = np.eye(10)[[int(t / 10) for t in range(100)]]
         zsamples = np.random.normal(size=(10 * 10, latent_dim))
-        xpred = dim_ordering_unfix(generator.predict([zsamples, hots])[0]).transpose((0, 2, 3, 1))
+        generated_images = generator.predict([zsamples, hots])
+        xpred = dim_ordering_unfix(generated_images).transpose((0, 2, 3, 1))
+
+        pprint.pprint(discriminator.predict(generated_images))
         return xpred.reshape((10, 10) + xpred.shape[1:])
 
     generator_cb = ImageGridCallback(os.path.join(path, "images", "epoch-{:03d}.png"), generator_sampler, cmap=None)

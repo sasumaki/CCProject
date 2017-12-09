@@ -39,3 +39,7 @@ def categorical_to_numerical_rules(categorical_values: List[str]) -> Dict[str, i
 def transform_categorical_to_numerical(categorical_values: List[str]) -> List[int]:
     rules = categorical_to_numerical_rules(categorical_values)
     return np.array([rules[categorical] for categorical in categorical_values])
+
+
+if __name__ == '__main__':
+    print(categorical_to_numerical_rules(types(load_catalog())))
