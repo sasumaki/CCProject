@@ -28,6 +28,9 @@ def download(art_paths_with_idx):
 if __name__ == '__main__':
     catalog = load_catalog()
     split_paths = defaultdict(list)
+    directory = "images"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     for idx, path in enumerate(art_paths(catalog)):
         split_paths[idx % 100].append((idx, path))
 
