@@ -28,7 +28,6 @@ def resize(img):
         aspect = (x/y)
     else:
         aspect = (y/x)
-    print(y,x,aspect)
     if y < x:
         img = misc.imresize(img, (64, math.ceil(64*aspect)), interp="lanczos")
     else:
@@ -41,13 +40,13 @@ def preprocess():
     images = []
     filenames = glob.glob('images/*.jpg')
     filenames.sort(key=sort_by_image_index)
+    print("processing...")
     for filename in filenames:
         try:
             image = ndimage.imread(filename, mode="RGB")
         except:
             continue
         image = resize(image)
-        print(image.shape)
         image_cropped = crop_center(image,64,64)
         images.append(image_cropped)
     return images
@@ -62,7 +61,7 @@ if __name__ == '__main__':
     idx = 0
     
     for image in images:
-        print("saving img " + str(idx) + "...")
         misc.imsave("images64x64/" + str(idx) + ".png", image)
         idx += 1
-        
+    
+    print("done")

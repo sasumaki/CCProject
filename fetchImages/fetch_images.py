@@ -7,7 +7,7 @@ from multiprocessing.pool import Pool
 
 import requests
 
-from fetchImages.catalog import load_catalog, art_paths
+from catalog import load_catalog, art_paths
 
 
 def download_image(art_path: str):
