@@ -23,9 +23,12 @@ def download(art_paths_with_idx: List[Tuple(int, str)]):
     Downloads all images and saves them to the 'images' directory.
     :param art_paths_with_idx: A list of tuples containing the image id and the path to the main page of the image.
     """
+    directory = "images"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     for idx, image in art_paths_with_idx:
         image_file = download_image(image)
-        with open(os.path.join('images', str(idx) + '.jpg'), 'wb') as f:
+        with open(os.path.join(directory, str(idx) + '.jpg'), 'wb') as f:
             try:
                 f.write(image_file)
             except TypeError as e:
@@ -35,9 +38,6 @@ def download(art_paths_with_idx: List[Tuple(int, str)]):
 if __name__ == '__main__':
     catalog = load_catalog()
     split_paths = defaultdict(list)
-    directory = "images"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
     for idx, path in enumerate(art_paths(catalog)):
         split_paths[idx % 100].append((idx, path))
 
