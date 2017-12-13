@@ -27,9 +27,9 @@ Please note that everything was done in Windows 10 operating system and is NOT t
 
 ## Project description
 [How to Build a CC System
-Paper type: System Description Paper (2017) by Dan Ventura](http://computationalcreativity.net/iccc2017/ICCC_17_accepted_submissions/ICCC-17_paper_20.pdf) proposes a way of modeling computationally creative systems. Our system has many similarities to the proposed model, but it is different in some matters. Our domain is images, more specifically artistic paintings. 
+Paper type: System Description Paper (2017) by Dan Ventura](http://computationalcreativity.net/iccc2017/ICCC_17_accepted_submissions/ICCC-17_paper_20.pdf) proposes a way of modeling computationally creative systems. Our system has many similarities to the proposed model, but it is different in some matters. 
 
-Regular 64x64 pixel digital images are the phenotypic representation of our domain. Internally, we used three 64x64 NumPy arrays to represent a single image. Each one of the three arrays correspond to one of the RGB channels of the image. Moreover, the RGB values were divided by 255 since neural networks work better with such representations.
+Our domain is images, more specifically artistic paintings. Regular 64x64 pixel digital images are the phenotypic representation of our domain. Internally, we used three 64x64 NumPy arrays to represent a single image. Each one of the three arrays correspond to one of the RGB channels of the image. Moreover, the RGB values were divided by 255 since neural networks work better with such representations.
 
 Our knowledge base consists of over 30,000 resized and cropped labeled paintings originally from the [Web Gallery of Art](https://www.wga.hu/). The resizing was done for the sake of training speed since [generative adversarial networks (GANs)](https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf) have a reputation of being slow to train. We use the labels (Genre, Historical, Interior, Landscape, Mythological, Other, Portrait, Religious, Still-life, Study) to train the generator to create paintings of the same style. However, the method we used did not work perfectly as discussed later. However, the main idea is still valid and increases the goal-orientation of the system.
 
