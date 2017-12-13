@@ -5,7 +5,7 @@ from multiprocessing.pool import Pool
 import requests
 from typing import List, Tuple
 
-from fetchImages.catalog import load_catalog, art_paths
+from catalog import load_catalog, art_paths
 
 
 def download_image(art_path: str) -> bytes:
@@ -35,6 +35,9 @@ def download(art_paths_with_idx: List[Tuple(int, str)]):
 if __name__ == '__main__':
     catalog = load_catalog()
     split_paths = defaultdict(list)
+    directory = "images"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     for idx, path in enumerate(art_paths(catalog)):
         split_paths[idx % 100].append((idx, path))
 

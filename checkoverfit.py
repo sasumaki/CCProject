@@ -9,12 +9,13 @@ import re
 from pathlib import Path
 import pandas as pd
 from itertools import *
+import sys
 
 from fetchImages.image_preprocess import sort_by_image_index
 
-def find_similar_images():
+def find_similar_images(arg):
 
-    generated_images = read_generated_images()  
+    generated_images = glob.glob(arg +"/*.png")
     hashfile = Path("corpus-hashes.csv")
     if not hashfile.is_file():
         print("Hashvalues for corpus are not precomputed.")
@@ -59,8 +60,9 @@ def generate_corpus_hashes():
     pd.DataFrame(data= {"hash": hashes, "image": corpus}, columns=["hash", "image"]).to_csv("corpus-hashes.csv")
     return()
 
-def read_generated_images():
-    filenames = glob.glob('output/art7/images/*.png')
+#Not in use atleast right now
+def read_generated_images(arg):
+    filenames = glob.glob(arg + "*.png")
     latest_epoch = "0"
     for filename in filenames:
         epoch = str(filename.split("-")[1]).split(".")[0]
@@ -72,5 +74,6 @@ def read_generated_images():
     return(filenames)
 
 if __name__ == '__main__':
-    find_similar_images()
+    arg = sys.argv[1]
+    find_similar_images(arg)
     
