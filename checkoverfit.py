@@ -13,8 +13,12 @@ import sys
 
 from fetchImages.image_preprocess import sort_by_image_index
 
-def find_similar_images(arg):
 
+def find_similar_images(arg):
+    """
+    #Uses phash to find similar images in corpus and generated images
+    #https://en.wikipedia.org/wiki/Perceptual_hashing
+    """
     generated_images = glob.glob(arg +"/*.png")
     hashfile = Path("corpus-hashes.csv")
     if not hashfile.is_file():
@@ -27,22 +31,29 @@ def find_similar_images(arg):
     dissimilarities = []
     iterator = 0
     last_operation = len(corpus) * len(generated_images)
-    for hashe, source in zip(corpus["hash"], corpus["image"]):
-        for image in generated_images:
-            target = Image.open(image)
-            dissimilarity = imagehash.hex_to_hash(hashe) - imagehash.average_hash(target)
+    for image in generated_images:
+        most_similar = "" 
+        minsim = 10000
+        target = Image.open(image)
+        targethash = imagehash.phash(target)
+        for hashe, source in zip(corpus["hash"], corpus["image"]):                           
+            dissimilarity = imagehash.hex_to_hash(hashe) - targethash
             print(str(iterator) + " / " + str(last_operation))
             iterator = iterator + 1
-
-            if dissimilarity <= 1:
-                sources.append(source)
-                targets.append(image)
-                dissimilarities.append(dissimilarity)
+            if(dissimilarity < minsim):
+                minsim = dissimilarity
+                most_similar = source      
+        sources.append(most_similar)
+        targets.append(image)
+        dissimilarities.append(dissimilarity)
                 
     pd.DataFrame(data= {"source": sources, "target": targets, "dissimilarity": dissimilarities}, columns=["source", "target", "dissimilarity"]).to_csv("similar_images.csv")
     return()
 
 def generate_corpus_hashes():
+    """
+    #Generates a csv for images in corpus. Makes future use faster.
+    """
     corpus = glob.glob('fetchImages/images64x64/*.png')
     corpus.sort(key=sort_by_image_index)
        
@@ -53,7 +64,7 @@ def generate_corpus_hashes():
         if(counter % 100 == 0):
             print("Index of progression: " + str(counter))
         img = Image.open(source_image)
-        hashvalue = imagehash.average_hash(img)
+        hashvalue = imagehash.phash(img)
         img.close()
         hashes.append(str(hashvalue))
         counter = counter + 1
@@ -74,6 +85,9 @@ def read_generated_images(arg):
     return(filenames)
 
 if __name__ == '__main__':
+   """
+   For CLI usage put folder of generated images as argument
+   """
     arg = sys.argv[1]
     find_similar_images(arg)
     
