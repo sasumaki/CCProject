@@ -178,14 +178,14 @@ def main():
 def load_existing_models():
     generators = glob.glob(path + "/**/generator.*")
     discriminators = glob.glob(path + "/**/discriminator.*")
-    current_epoch = 1
+    current_epoch = 0
     if generators:
         latest_generator = max(generators, key=os.path.getctime)
         generator = load_model(latest_generator)
         current_epoch = max(current_epoch, 1 + int(re.search("generator\.(\d*)\.h5", latest_generator).group(1)))
     else:
         generator = model_generator()
-        current_epoch = max(current_epoch, 1)
+        current_epoch = max(current_epoch, 0)
     if discriminators:
         latest_discriminator = max(discriminators, key=os.path.getctime)
         discriminator = load_model(latest_discriminator)
@@ -193,7 +193,7 @@ def load_existing_models():
                             1 + int(re.search("discriminator\.(\d*)\.h5", latest_discriminator).group(1)))
     else:
         discriminator = model_discriminator()
-        current_epoch = max(current_epoch, 1)
+        current_epoch = max(current_epoch, 0)
     return current_epoch, discriminator, generator
 
 
