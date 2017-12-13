@@ -25,9 +25,17 @@ from keras_adversarial import AdversarialOptimizerSimultaneous
 from keras_adversarial.legacy import Dense, BatchNormalization, fit, l1l2, Convolution2D, AveragePooling2D
 from adversarial.examples.image_utils import dim_ordering_unfix, dim_ordering_shape
 
+optimizer = AdversarialOptimizerSimultaneous()
+opt_g = Adam(1e-5, decay=1e-5)
+opt_d = Adam(5e-5, decay=1e-5)
+nb_epoch = 500
+path = os.path.join("output", "art9")
+loss = 'binary_crossentropy'
+latent_dim = 100
+nb_labels = 10
+
 
 def model_generator():
-    model = Sequential()
     nch = 256
     reg = lambda: l1l2(l1=1e-7, l2=1e-7)
     h = 5
@@ -35,7 +43,8 @@ def model_generator():
     input_z = Input(shape=(latent_dim,))
     input_label = Input(shape=(1,))
 
-    input_label_embedding = Flatten()(Embedding(10, latent_dim, embeddings_initializer='glorot_normal')(input_label))
+    input_label_embedding = Flatten()(
+        Embedding(nb_labels, latent_dim, embeddings_initializer='glorot_normal')(input_label))
 
     H = layers.multiply([input_z, input_label_embedding])
     H = Dense(nch * 4 * 4, W_regularizer=reg())(H)
@@ -94,7 +103,7 @@ def model_discriminator():
     fake = Dense(1)(H)
     fake = Activation('sigmoid')(fake)
 
-    category = Dense(10)(H)
+    category = Dense(nb_labels)(H)
     category = Activation('softmax')(category)
     return Model(inputs=[input_d], outputs=[fake, category])
 
@@ -119,15 +128,6 @@ def simple_gan(generator, discriminator, latent_sampling):
     return build_gan(generator, discriminator)
 
 
-optimizer = AdversarialOptimizerSimultaneous()
-opt_g = Adam(1e-5, decay=1e-5)
-opt_d = Adam(5e-5, decay=1e-5)
-nb_epoch = 500
-path = os.path.join("output", "art9")
-loss = 'binary_crossentropy'
-latent_dim = 100
-
-
 def main():
     # Uncomment this for debugging
     # sess = K.get_session()
@@ -137,16 +137,13 @@ def main():
     xtrain = imageloader.preprocess(imageloader.filter_paintings(imageloader.load_training_data()))
     y = gan_targets(xtrain.shape[0])
     y[-1] -= 0.1  # 1-sided label smoothing "hack"
-    z = np.random.normal(size=(xtrain.shape[0], 100))
+    z = np.random.normal(size=(xtrain.shape[0], latent_dim))
 
     catalog_file = catalog.load_catalog()
     numerical_categories = catalog.transform_categorical_to_numerical(catalog.types(catalog_file))
-    one_hot_length = max(numerical_categories) + 1
-    targets = np.array([numerical_categories]).reshape(-1)
-    one_hots = np.eye(one_hot_length)[targets]
-    one_hots = one_hots[imageloader.painting_filter()]
+    one_hots = transform_to_one_hot_vectors(numerical_categories)
 
-    current_epoch, discriminator, generator = load_existing_models()
+    current_epoch, discriminator, generator = load_models()
 
     generator.summary()
     discriminator.summary()
@@ -165,7 +162,7 @@ def main():
                                   "yreal": "binary_crossentropy",
                                   "yreal_label": "categorical_crossentropy",
                                   "yfake_label": "categorical_crossentropy"
-                                  })
+                              })
 
     callbacks = initialize_callbacks(path, generator, discriminator, latent_dim)
 
@@ -175,7 +172,21 @@ def main():
                   batch_size=32)
 
 
-def load_existing_models():
+def transform_to_one_hot_vectors(numerical_categories):
+    one_hot_length = max(numerical_categories) + 1
+    targets = np.array([numerical_categories]).reshape(-1)
+    one_hots = np.eye(one_hot_length)[targets]
+    one_hots = one_hots[imageloader.painting_filter()]
+    return one_hots
+
+
+def load_models():
+    """
+    Creates a generator and a discriminator if there are no saved models.
+    Otherwise, existing models are loaded and the current epoch is set to that
+    of the loaded models.
+    :return: A tuple of (current_epoch, discriminator, generator).
+    """
     generators = glob.glob(path + "/**/generator.*")
     discriminators = glob.glob(path + "/**/discriminator.*")
     current_epoch = 0
@@ -198,6 +209,10 @@ def load_existing_models():
 
 
 class AdversarialModelSaver(Callback):
+    """
+    Saves the generator and the discriminator after each epoch.
+    """
+
     def __init__(self, path, generator, discriminator):
         self.generator = generator
         self.discriminator = discriminator
@@ -212,12 +227,11 @@ class AdversarialModelSaver(Callback):
 
 def initialize_callbacks(path, generator, discriminator, latent_dim):
     def generator_sampler():
-        labels = np.array([int(t / 10) for t in range(100)])
+        labels = np.array([int(t / nb_labels) for t in range(100)])
         zsamples = np.random.normal(size=(10 * 10, latent_dim))
         generated_images = generator.predict([zsamples, labels])
         xpred = dim_ordering_unfix(generated_images).transpose((0, 2, 3, 1))
 
-        pprint.pprint(discriminator.predict(generated_images))
         return xpred.reshape((10, 10) + xpred.shape[1:])
 
     generator_cb = ImageGridCallback(os.path.join(path, "images", "epoch-{:03d}.png"), generator_sampler, cmap=None)

@@ -1,19 +1,20 @@
 import glob
+import os
+import pickle
 
 import numpy as np
-import pickle
-import os
 from matplotlib.pyplot import imread
-from operator import itemgetter
 
 from fetchImages import catalog
 from fetchImages.catalog import load_catalog
-import re
-
 from fetchImages.image_preprocess import sort_by_image_index
 
 
 def load_training_data():
+    """
+    Loads 64x64 images as NumPy arrays from the images64x64.
+    :return:
+    """
     cache = 'cache'
     if not os.path.exists(cache):
         os.makedirs(cache)
@@ -35,6 +36,10 @@ def load_training_data():
 
 
 def painting_filter():
+    """
+    Returns indexes of all images that are paintings.
+    :return: Indexes of all images that are paintings as a list.
+    """
     all_forms = catalog.forms(load_catalog())
     paintings = [idx for idx, form in enumerate(all_forms) if form == 'painting']
     return paintings
@@ -45,6 +50,9 @@ def filter_paintings(images):
 
 
 def preprocess(images):
+    """
+    Does nothing at the moment.
+    """
     return images
 
 if __name__ == '__main__':

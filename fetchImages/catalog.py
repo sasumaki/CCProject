@@ -6,6 +6,10 @@ import os
 
 
 def load_catalog() -> List[List[str]]:
+    """
+    Loads the catalog.csv file which contains information about the dataset.
+    :return:
+    """
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'catalog.csv')) as f:
         reader = csv.reader(f, delimiter=';')
         return list(reader)[1:]
@@ -32,11 +36,21 @@ def forms(catalog: List[List[str]]) -> List[str]:
 
 
 def categorical_to_numerical_rules(categorical_values: List[str]) -> Dict[str, int]:
+    """
+    Generates a translation key for encoding a list of categorical string values into integers.
+    :param categorical_values: A list of categorical string values.
+    :return: A dict where string category -> integer category
+    """
     unique_values = set(categorical_values)
     return {category: idx for idx, category in enumerate(sorted(list(unique_values)))}
 
 
 def transform_categorical_to_numerical(categorical_values: List[str]) -> List[int]:
+    """
+    Encodes a list of categorical string values into integers.
+    :param categorical_values: A list of categorical string values.
+    :return: A list of encoded categories.
+    """
     rules = categorical_to_numerical_rules(categorical_values)
     return np.array([rules[categorical] for categorical in categorical_values])
 
